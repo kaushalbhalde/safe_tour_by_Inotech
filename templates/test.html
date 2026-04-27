@@ -1,0 +1,112 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Free Map (Leaflet + OSM)</title>
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-sA+q+8t9Qq3m/2mK3R0p0r1xvA3wQ5h6v4v1f8a3gQk="
+    crossorigin=""/>
+
+  <style>
+    body { margin:0; font-family: Arial, sans-serif; }
+    #map { height: 600px; width: 100%; }
+    .my-location-marker {
+      background: #2b8cbe;
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      border: 2px solid white;
+    }
+  </style>
+</head>
+<body>
+
+<h3>Group Map (OpenStreetMap + Leaflet)</h3>
+<div id="map"></div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-o9N1jGk0W0fB5e6r3t4zX6QGk9F0p4rH2bF0v2x2w0I="
+  crossorigin=""></script>
+
+<script>
+  // Server-provided users (Jinja renders this). If you passed group_users from Flask:
+  const groupUsers = {{ group_users|tojson | safe }};
+
+  // Default center (if geolocation fails) — use approximate group center
+  const defaultCenter = [21.3188610, 76.2118140];
+
+  // Create map
+  const map = L.map('map').setView(defaultCenter, 14);
+
+  // Add OSM tile layer (free) with attribution
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  }).addTo(map);
+
+  // Marker icon examples (you can customize)
+  const defaultIcon = L.circleMarker([0,0], { radius: 8 }).options;
+
+  // Add group user markers from server
+  const markers = [];
+  groupUsers.forEach(u => {
+    if (!u || u.lat == null || u.lon == null) return;
+    const marker = L.marker([parseFloat(u.lat), parseFloat(u.lon)])
+      .addTo(map)
+      .bindPopup(`<strong>${escapeHtml(u.name)}</strong><br/>Lat: ${u.lat}, Lng: ${u.lon}`);
+    markers.push(marker);
+  });
+
+  // Fit bounds if we have markers
+  if (markers.length) {
+    const group = new L.featureGroup(markers);
+    map.fitBounds(group.getBounds().pad(0.15));
+  }
+
+  // Try to get browser geolocation
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+
+        // Add a custom styled marker for current user
+        const myMarker = L.marker([lat, lng], {
+          title: 'You are here',
+        }).addTo(map);
+
+        myMarker.bindPopup(`<div class="my-location-marker">You (approx.)<br/>${lat.toFixed(6)}, ${lng.toFixed(6)}</div>`).openPopup();
+
+        // Optionally center map on the user
+        // map.setView([lat, lng], 14);
+      },
+      err => {
+        console.warn('Geolocation failed or denied:', err.message);
+        // leave map as-is
+      }, {
+        enableHighAccuracy: true,
+        timeout: 8000,
+        maximumAge: 0
+      }
+    );
+  } else {
+    console.warn('Geolocation not supported by this browser.');
+  }
+
+  // Simple helper to avoid XSS in popup content
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;');
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Add Member - Tourist Safety App</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f8f9fc;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .form-container {
+      background: #fff;
+      padding: 30px 40px;
+      border-radius: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      width: 360px;
+      box-sizing: border-box;
+      text-align: center;
+    }
+    h2 {
+      margin-bottom: 20px;
+      color: #1a4aa8;
+    }
+    .form-group {
+      margin-bottom: 18px;
+      text-align: left;
+    }
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 6px;
+      font-size: 14px;
+      color: #333;
+    }
+    input[type="text"], input[type="email"], input[type="password"], input[type="number"], select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 14px;
+      box-sizing: border-box;
+      transition: border-color 0.2s;
+      background: #fff;
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+    }
+    input:focus, select:focus {
+      border-color: #007bff;
+      outline: none;
+    }
+    button {
+      width: 100%;
+      padding: 14px;
+      background: #1a4aa8;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.25s ease;
+    }
+    button:hover {
+      background: #1060d8;
+    }
+    .message {
+      margin-top: 12px;
+      font-size: 14px;
+      min-height: 18px;
+      color: #e74c3c;
+    }
+    .message.success {
+      color: #148514;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="form-container">
+    <h2>Add Member</h2>
+
+    <form method="POST" action="/add_member">
+      <div class="form-group">
+        <label for="name">Full Name</label>
+        <input type="text" id="name" name="name" placeholder="Member's full name" required />
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email address</label>
+        <input type="email" id="email" name="email" placeholder="user@example.com" required />
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" placeholder="Create a password" required />
+      </div>
+
+      <div class="form-group">
+        <label for="latitude">Latitude</label>
+        <input type="number" step="any" id="latitude" name="latitude" placeholder="e.g. 23.2561" required />
+      </div>
+
+      <div class="form-group">
+        <label for="longitude">Longitude</label>
+        <input type="number" step="any" id="longitude" name="longitude" placeholder="e.g. 77.4859" required />
+      </div>
+
+      <div class="form-group">
+        <label for="role">Role</label>
+        <select id="role" name="role" required>
+          <option value="member" selected>Member</option>
+        </select>
+      </div>
+
+      <button type="submit">Add Member</button>
+    </form>
+
+    <div class="message">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <p class="{{ 'success' if category == 'success' else '' }}">{{ message }}</p>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+    </div>
+  </div>
+
+</body>
+</html>

@@ -1,0 +1,1153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Tourist Safety App</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f8f9fc;
+        }
+        header {
+      background: #fff;
+      padding: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    header h1 { margin: 0; font-size: 22px; }
+    header p { margin: 5px 0; color: #666; }
+    .location { font-size: 14px; color: #777; }
+
+        header {
+            background: #fff;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            
+        }
+        header h1 { margin: 0; font-size: 22px; display: flex; align-items: center; }
+        header h1 img { height: 28px; margin-right: 10px; } /* Logo styling */
+        .header-icons { display: flex; gap: 15px; }
+        .header-icons .icon { font-size: 20px; color: #555; cursor: pointer; }
+
+        .section { display: none; padding: 20px; min-height: calc(100vh - 120px); }
+        .active-section { display: block; }
+
+        .status-card, .quick-actions, .recent-updates, .group-section-card, .feedback-card, .emergency-card {
+            background: #fff;
+            margin: 20px 0;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+        .status-card h2, .quick-actions h2, .recent-updates h2, .group-section-card h2, .feedback-card h2, .emergency-card h2 { font-size: 18px; margin-bottom: 15px; }
+
+        .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
+        .box {
+            padding: 20px; border-radius: 10px; text-align: center; font-size: 14px; cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .box:hover { transform: translateY(-3px); box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
+        .risk { background: #e8fce8; color: #148514; }
+        .incidents { background: #e8f0fc; color: #1a4aa8; }
+        .group { background: #f5e8fc; color: #812ea8; }
+        .update { background: #f4f4f4; color: #555; }
+
+        .quick-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
+        .quick-btn { padding: 15px; border-radius: 10px; text-align: center; font-size: 14px; cursor: pointer; color: #fff; }
+        .safe { background: #27ae60; } .incident { background: #e74c3c; }
+        .find { background: #3498db; } .rate { background: #f39c12; }
+
+        .update-item { padding: 12px; margin: 8px 0; border-radius: 8px; font-size: 14px; }
+        .safe-zone { background: #e8fce8; color: #148514; }
+        .check-in { background: #e8f0fc; color: #1a4aa8; }
+
+        #map { width: 100%; height: 400px; border-radius: 12px; margin-top: 15px; }
+        .map-tabs { display: flex; gap: 10px; }
+        .map-tabs button { flex: 1; padding: 10px; border: none; border-radius: 6px; cursor: pointer; background: #f0f0f0; }
+        .map-tabs button.active { background: #007bff; color: white; }
+        .legend { margin-top: 10px; padding: 10px; background: #fff; border-radius: 8px; font-size: 14px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+
+        /* Group Section Specific Styles */
+        .travel-group-summary {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .summary-card {
+            background: #fff;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            font-size: 14px;
+        }
+        .summary-card.total { background-color: #e8f0fc; color: #1a4aa8; }
+        .summary-card.online { background-color: #e8fce8; color: #148514; }
+        .summary-card.alerts { background-color: #fce8e8; color: #e74c3c; }
+        .summary-card .icon-large { font-size: 24px; margin-bottom: 5px; }
+        .summary-card strong { display: block; font-size: 24px; margin-top: 5px; }
+
+        .group-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .group-header h2 { margin: 0; font-size: 20px; }
+        .add-group-member-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+        .group-locations {
+            background: #e0f2f7; /* Light blue gradient background from image */
+            height: 250px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
+            border: 1px solid #cceeff;
+        }
+        .group-location-point {
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background-color: #007bff;
+            border: 2px solid #fff;
+            box-shadow: 0 0 5px rgba(0,0,0,0.3);
+            z-index: 10;
+        }
+        .group-location-point.green { background-color: #27ae60; }
+        .group-location-point.gray { background-color: #95a5a6; }
+        .group-location-label {
+            position: absolute;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 5px;
+            font-size: 10px;
+            white-space: nowrap;
+            transform: translate(-50%, -120%);
+            pointer-events: none;
+            opacity: 0.9;
+            z-index: 11;
+        }
+
+        /* Group Member List Styles */
+        .group-member-list h2 { margin-bottom: 10px; }
+        .member-list-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #fafafa;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .member-info-left {
+            display: flex;
+            align-items: center;
+            flex-grow: 1;
+        }
+        .member-initials {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e8f0fc;
+            color: #1a4aa8;
+            font-size: 14px;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+        .member-initials.online { background: #e8fce8; color: #148514; }
+        .member-initials.last-seen { background: #f5e8fc; color: #812ea8; }
+        .member-text { line-height: 1.2; }
+        .member-text h3 { margin: 0; font-size: 16px; }
+        .member-text p { margin: 2px 0 0; font-size: 12px; color: #777; }
+        .member-status { font-weight: bold; font-size: 12px; display: flex; align-items: center; }
+        .member-status-dot { width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
+        .member-status-dot.online { background-color: #27ae60; }
+        .member-status-dot.last-seen { background-color: #f39c12; }
+        .member-details-right { display: flex; align-items: center; gap: 15px; }
+        .member-details-right p { margin: 0; font-size: 12px; color: #555; text-align: right; }
+        .member-details-right .action-icon { font-size: 18px; color: #3498db; cursor: pointer; }
+
+        /* Emergency Section Styles */
+        .emergency-card h2 { margin-bottom: 10px; }
+        .emergency-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .emergency-header label { font-size: 14px; color: #555; }
+        .emergency-header select { padding: 8px; border-radius: 8px; border: 1px solid #ccc; }
+        .emergency-numbers-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
+        .emergency-number-box {
+            background: #fdf2f2; color: #c0392b; padding: 25px; border-radius: 12px;
+            text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.05); cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .emergency-number-box:hover { transform: translateY(-3px); box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
+        .emergency-number-box .icon-large { font-size: 36px; margin-bottom: 10px; }
+        .emergency-number-box strong { display: block; font-size: 24px; font-weight: bold; margin-top: 5px; }
+        
+        .other-contacts h3 { margin-top: 20px; font-size: 18px; }
+        .contact-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px; margin-bottom: 10px; border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .contact-item.fire { background-color: #fdf2f2; color: #c0392b; }
+        .contact-item.helpline { background-color: #fffde8; color: #f39c12; }
+        .contact-item.embassy { background-color: #e8f0fc; color: #1a4aa8; }
+        .contact-item.hotel { background-color: #e8fce8; color: #148514; }
+        
+        .contact-info { display: flex; align-items: center; }
+        .contact-info .icon { font-size: 24px; margin-right: 15px; }
+        .contact-info .text { line-height: 1.2; }
+        .contact-info .text strong { font-size: 16px; display: block; }
+        .contact-info .text span { font-size: 14px; }
+        .call-icon { font-size: 24px; cursor: pointer; color: #007bff; }
+        .notes-section { margin-top: 20px; }
+        .notes-section h3 { margin-bottom: 10px; font-size: 18px; }
+        .note-item { display: flex; align-items: flex-start; margin-bottom: 8px; font-size: 14px; color: #555; }
+        .note-item .icon { font-size: 18px; margin-right: 10px; color: #666; }
+
+        /* Feedback Section Styles */
+        .feedback-card h2 { margin-bottom: 10px; }
+        .feedback-tabs { display: flex; justify-content: flex-start; margin-bottom: 20px; }
+        .feedback-tabs button {
+            padding: 10px 15px; border: none; border-radius: 8px;
+            background: #e9ecef; color: #495057; font-weight: bold;
+            cursor: pointer; transition: background 0.2s;
+        }
+        .feedback-tabs button.active { background: #007bff; color: white; }
+        .feedback-tabs button:first-child { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+        .feedback-tabs button:last-child { border-top-left-radius: 0; border-bottom-left-radius: 0; margin-left: -1px; }
+
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
+        .form-group .required { color: #e74c3c; }
+        .location-input {
+            width: 100%; padding: 12px; border: 1px solid #ccc;
+            border-radius: 8px; font-size: 16px; box-sizing: border-box;
+        }
+        .location-input-container { position: relative; }
+        .location-input-container .icon {
+            position: absolute; left: 10px; top: 50%;
+            transform: translateY(-50%); color: #999;
+        }
+        .location-input { padding-left: 35px; }
+        .rating-group { display: flex; justify-content: space-between; }
+        .rating-box { flex-basis: 48%; }
+        .star-rating { display: flex; font-size: 24px; gap: 5px; cursor: pointer; }
+        .star-rating .star { color: #ccc; }
+        .star-rating .star.filled { color: #ffc107; }
+        .incident-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr);
+            gap: 15px; margin-top: 15px;
+        }
+        .incident-btn {
+            background: #fff; padding: 15px; border-radius: 12px;
+            border: 1px solid #e0e0e0; text-align: center; cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .incident-btn:hover { border-color: #a0d1ff; }
+        .incident-btn.selected { border-color: #007bff; background-color: #e6f2ff; }
+        .incident-btn .icon { font-size: 24px; margin-bottom: 5px; display: block; }
+        .incident-btn span { font-size: 12px; font-weight: bold; }
+
+        .feedback-textarea {
+            width: 100%; height: 100px; padding: 12px;
+            border: 1px solid #ccc; border-radius: 8px;
+            box-sizing: border-box; resize: vertical;
+        }
+
+        .photo-upload-container {
+            border: 2px dashed #ccc; border-radius: 12px;
+            padding: 30px; text-align: center; color: #888;
+            margin-top: 15px; cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .photo-upload-container:hover { border-color: #007bff; background-color: #f8f9fa; }
+        .photo-upload-container .icon { font-size: 36px; margin-bottom: 10px; }
+        .photo-upload-container p { margin: 0; font-size: 14px; }
+        .photo-upload-container small { display: block; margin-top: 5px; font-size: 12px; }
+
+        .submit-btn {
+            background: #28a745; color: white; padding: 12px 20px;
+            border: none; border-radius: 8px; cursor: pointer;
+            width: 100%; font-size: 16px; margin-top: 20px;
+            transition: background 0.2s;
+        }
+        .submit-btn:hover { background: #218838; }
+
+        .bottom-nav {
+            position: fixed; bottom: 0; width: 100%;
+            background: #fff; display: flex; justify-content: space-around;
+            padding: 1px 0; box-shadow: 0 -2px 6px rgba(0,0,0,0.1);
+        }
+        .bottom-nav div { text-align: center; font-size: 14px; color: #555; cursor: pointer; }
+        .bottom-nav div img { height: 24px; display: block; margin: 0 auto 3px; }
+        .bottom-nav .active { color: #007bff; font-weight: bold; }
+
+        .sos-btn {
+            position: fixed; bottom: 80px; right: 20px;
+            background: #e74c3c; color: white; border: none;
+            border-radius: 50%; width: 60px; height: 60px;
+            font-size: 24px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 100;
+        }
+        
+       
+        #recordingModal {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 380px;
+    z-index: 10000;
+    box-shadow: 0 6px 24px rgba(200, 60, 60, 0.28);
+    border-radius: 20px;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    overflow: hidden;
+    background: transparent;
+  }
+  #recordingModal .modal-tag-wrapper {
+    display: flex;
+    background: transparent;
+    border-radius: 20px;
+    box-shadow: 0 8px 24px rgba(200, 60, 60, 0.20);
+  }
+  #recordingModal .modal-left {
+    background: #e74c3c;
+    color: #fff;
+    width: 150px;
+    border-radius: 20px 0 0 20px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 32px 0;
+    position: relative;
+  }
+  #recordingModal .circle {
+    width: 28px; height: 28px; background: #fff;
+    border-radius: 50%; margin: 0 auto 12px auto;
+    box-shadow: 0 0 6px rgba(220, 57, 51, 0.18);
+  }
+  #recordingModal .modal-title {
+    font-size: 1.3rem;
+    font-weight: bold;
+    letter-spacing: 1px;
+    margin-top: 8px;
+    animation: sosPulse 1.1s infinite;
+  }
+
+  
+
+  #recordingModal .modal-right {
+    background: #fff;
+    width: 230px;
+    border-radius: 0 20px 20px 0;
+    padding: 28px 15px 20px 15px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    box-sizing: border-box;
+  }
+  #recordingModal .modal-desc {
+    font-size: 1rem;
+    color: #444;
+    margin-bottom: 13px;
+  }
+  #recordingModal .modal-status-list {
+    list-style: none;
+    padding: 0; margin: 0 0 12px 0;
+    font-weight: 500;
+    font-size: 1rem;
+  }
+  #recordingModal .modal-status-list li {
+    display: flex; align-items: center; margin-bottom: 12px; color: #444;
+  }
+  .modal-status-icon {
+    font-size: 1.35rem; margin-right: 11px; line-height: 1;
+  }
+  .mic { color: #5252e7; }
+  .pin { color: #e74c3c; }
+  .phone { color: #e91e63; }
+  #recordingModal button {
+    width: 100%;
+    margin-top: 11px;
+    padding: 13px 0;
+    font-weight: 700;
+    background: #434c56;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 1.05rem;
+    box-shadow: 0 0 10px rgba(200, 60, 60, 0.10);
+    transition: background 0.25s;
+  }
+  #recordingModal button:hover {
+    background: #262a2f;
+  }
+
+  @keyframes sosPulse {
+    0%, 100% {
+      color: #fff;
+      text-shadow: 0 0 7px #e74c3c, 0 0 20px #e74c3c;
+      transform: scale(1);
+      opacity: 1;
+    }
+    50% {
+      color: #ffd6d6;
+      text-shadow: 0 0 14px #ef2222, 0 0 30px #d22;
+      transform: scale(1.08);
+      opacity: 0.70;
+    }
+    </style>
+</head>
+<body>
+    
+    <header style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <h1>Welcome, {{ username }} ({{ role }})!</h1>
+          <p>Stay safe and enjoy your journey</p>
+          <p class="location">📍 Location: {{ lat }}, {{ lon }}</p>
+         
+          <button id="openAddMemberBtn" style="margin-top:10px; padding: 10px 15px; background:#1a4aa8; color:#fff; border:none; border-radius:6px; cursor:pointer;">
+            Add Member
+          </button>
+          <form id="updateLocationForm" action="{{ url_for('update_location') }}" method="post" style="display:inline; margin-left: 10px;">
+            <input type="hidden" id="userIdInput" name="user_id" value="{{ id }}">
+            <input type="hidden" id="latInput" name="lat" value="{{ lat }}">
+            <input type="hidden" id="lonInput" name="lon" value="{{ lon }}">
+            <button type="submit" id="updateLocationBtn" style="padding: 10px 15px; background: #28a745; color: #fff; border: none; border-radius: 6px; cursor: pointer;">
+              Update My Location
+            </button>
+          </form>
+        </div>
+        <div>
+          <form action="{{ url_for('logout') }}" method="post" style="margin: 0;">
+            <button type="submit" style="padding: 8px 15px; background: #dc3545; color: white; border: none; border-radius: 6px; cursor: pointer;">
+              Logout
+            </button>
+          </form>
+        </div>
+      </header>
+      
+
+    <div id="home" class="section active-section">
+        <div class="status-card">
+            <h2>Safety Status</h2>
+            <div class="grid">
+                <div class="box risk" onclick="showMessage('Current Risk is Low and safe for travel.')">🛡️<br>Current Risk<br><strong>Low</strong></div>
+                <div class="box incidents" onclick="showMessage('No nearby incidents reported.')">⚠️<br>Nearby Incidents<br><strong>0</strong></div>
+                <div class="box group" onclick="showMessage('Your group size is 4 members.')">👥<br>Group Size<br><strong>{{ total_members }}</strong></div>
+                <div class="box update" onclick="showMessage('Last update was 2 minutes ago.')">⏱️<br>Last location Update<br><strong>{{ last_location_update if last_location_update else "N/A" }}</strong></div>
+            </div>
+        </div>
+
+        <div class="quick-actions">
+            <h2>Quick Actions</h2>
+            <div class="quick-grid">
+                <div class="quick-btn safe" onclick="showSection('map-section', this)">🟢 View Safe Routes</div>
+                <div class="quick-btn incident" onclick="showSection('emergency', this)">🔴 Report Incident</div>
+                <div class="quick-btn find" onclick="showSection('group', this)"">👥Group Details </div>
+                <div class="quick-btn rate" onclick="showSection('feedback', this)">⭐ Rate Location</div>
+            </div>
+        </div>
+
+        <div class="recent-updates">
+            <h2>Recent Safety Updates</h2>
+            <div class="update-item safe-zone">🟢 Safe Zone Entered <br><small>You are now in a verified safe tourist area</small></div>
+            <div class="update-item check-in">👥 Group Member Check-in <br><small>Sarah checked in from Times Square - 5 mins ago</small></div>
+        </div>
+    </div>
+
+    <div id="map-section" class="section">
+        <h2>🗺️ Safety Map</h2>
+        <div class="map-tabs">
+            <button class="active" onclick="filterMarkers('zones', this)">Detailed Map</button>
+            <!-- <button onclick="filterMarkers('incidents', this)">Incidents</button>
+            <button onclick="filterMarkers('routes', this)">Safe Routes</button> -->
+        </div>
+        <!-- <input type="text" placeholder="🔍 Search location..." style="width:100%;padding:10px;margin:10px 0;border-radius:8px;border:1px solid #ccc;"> -->
+        <div id="map"></div>
+        <div class="legend">
+            <strong>Legend:</strong><br>
+            🔵 Your Location<br>
+            🔴 High Risk<br>
+            🟠 Medium Risk
+        </div>
+    </div>
+
+    <div id="group" class="section">
+        <div class="group-header">
+            <h2>Travel Group</h2>
+        </div>
+
+        <div class="travel-group-summary">
+            <div class="summary-card total">
+                <span class="icon-large">👥</span>
+                Total Members
+                <strong>{{ total_members }}</strong>
+            </div>
+            <div class="summary-card online">
+                <span class="icon-large">🟢</span>
+                Last location update
+                <strong>{{ last_location_update if last_location_update else "N/A" }}</strong>
+            </div>
+            <div class="summary-card alerts">
+                <span class="icon-large">⚠️</span>
+                Alerts
+                <strong>0</strong>
+            </div>
+        </div>
+
+       
+        <div id="group-map" style="height: 250px; width: 100%; border-radius: 12px; margin-bottom: 20px;"></div>
+      
+
+        <script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBO04g0S4MNJsY9mT-KI2cePODKIKa9fgY&callback=initMaps"></script>
+        
+
+
+        
+        <div class="group-member-list">
+            <h2>Group Members</h2>
+            {% for member in group_users %}
+              <div class="member-list-item">
+                <div class="member-info-left">
+                  {% set is_current = member.name == username %}
+                  <div class="member-initials {% if is_current %}online{% else %}last-seen{% endif %}">
+                    {% if is_current %}
+                      YOU
+                    {% else %}
+                      {{ member.name[:2].upper() }}
+                    {% endif %}
+                  </div>
+                  <div class="member-text">
+                    <h3>
+                      {% if is_current %}
+                      {{ member.name }} (Current User)
+                      {% else %}
+                        {{ member.name }}
+                      {% endif %}
+                    </h3>
+                    <p class="member-status">
+                      <span class="member-status-dot {% if is_current %}online{% else %}last-seen{% endif %}"></span>
+                      {% if is_current %}
+                        Online now
+                      {% else %}
+                        <!-- Optionally: display time ago, e.g. last_location_update field -->
+                        Last seen just now
+                      {% endif %}
+                    </p>
+                  </div>
+                </div>
+                <div class="member-details-right">
+                  <p>
+                    {% if is_current %}
+                      Host
+                    {% else %}
+                      <!-- Optionally: show distance or other info if available -->
+                    {% endif %}
+                  </p>
+                  {% if not is_current %}
+                    <!-- <span class="action-icon">📞</span> -->
+                  {% endif %}
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+          
+    </div>
+    
+    <div id="emergency" class="section">
+        <div class="emergency-card">
+            <h2>Emergency Contacts</h2>
+            <div class="emergency-header">
+                <label for="country-select">Select your country/region:</label>
+                <select id="country-select">
+                    <option value="in">IN: India </option>
+                   
+                </select>
+            </div>
+            <div id="emergency-numbers-container">
+                <h3>Indian - Emergency Numbers</h3>
+                <div class="emergency-numbers-grid">
+                    <div class="emergency-number-box" onclick="alert('Calling General Emergency...')">
+                        <span class="icon-large">🚨</span>
+                        General Emergency
+                        <strong>112</strong>
+                    </div>
+                    <div class="emergency-number-box" onclick="alert('Calling Police...')">
+                        <span class="icon-large">👮‍♂️</span>
+                        Police
+                        <strong>100</strong>
+                    </div>
+                    <div class="emergency-number-box" onclick="alert('Calling Fire...')">
+                        <span class="icon-large">🚒</span>
+                        Fire
+                        <strong>101</strong>
+                    </div>
+                    <div class="emergency-number-box" onclick="alert('Calling Medical...')">
+                        <span class="icon-large">⚕️</span>
+                        Medical
+                        <strong>108</strong>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="other-contacts">
+                <h3>Other Contacts</h3>
+                <div class="contact-item fire">
+                    <div class="contact-info">
+                        <span class="icon">🚒</span>
+                        <div class="text">
+                            <strong>Fire Department</strong>
+                            <span>101</span>
+                        </div>
+                    </div>
+                    <span class="call-icon" onclick="alert('Calling Fire Department...')">📞</span>
+                </div>
+                <div class="contact-item helpline">
+                    <div class="contact-info">
+                        <span class="icon">🛈</span>
+                        <div class="text">
+                            <strong>Tourist Helpline</strong>
+                            <span>1800-11-1363</span>
+                        </div>
+                    </div>
+                    <span class="call-icon" onclick="alert('Calling Tourist Helpline...')">📞</span>
+                </div>
+                <div class="contact-item embassy">
+                    <div class="contact-info">
+                        <span class="icon">🏛️</span>
+                        <div class="text">
+                            <strong>Embassy</strong>
+                            <span>+91-11-2419-8000</span>
+                        </div>
+                    </div>
+                    <span class="call-icon" onclick="alert('Calling Embassy...')">📞</span>
+                </div>
+                <div class="contact-item hotel">
+                    <div class="contact-info">
+                        <span class="icon">🏨</span>
+                        <div class="text">
+                            <strong>Hotel Concierge</strong>
+                            <span>1-800-419-6444</span>
+                        </div>
+                    </div>
+                    <span class="call-icon" onclick="alert('Calling Hotel Concierge...')">📞</span>
+                </div>
+            </div>
+
+            <div class="notes-section">
+                <h3>Important Notes</h3>
+                <div class="note-item">
+                    <span class="icon">🕥</span>
+                    <p>Emergency services are available 24/7. Don't hesitate to call if you need help.</p>
+                </div>
+                <div class="note-item">
+                    <span class="icon">🌐</span>
+                    <p>Tourist helplines often have multilingual support for international visitors.</p>
+                </div>
+                <div class="note-item">
+                    <span class="icon">📍</span>
+                    <p>Always share your location when calling emergency services for faster response.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="feedback" class="section">
+        <div class="feedback-card">
+          <form id="feedbackForm" method="POST" action="/submit_feedback">
+  <div class="feedback-card">
+    <h2>Safety Feedback</h2>
+    <div class="feedback-tabs">
+      <button class="active" type="button">Submit Feedback</button>
+      <button type="button">My History</button>
+    </div>
+    <div class="form-group">
+      <label for="location">Location <span class="required">*</span></label>
+      <div class="location-input-container">
+        <span class="icon">📍</span>
+        <input type="text" id="location" name="location" class="location-input" placeholder="Enter location name or address" required>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>What happened? (Optional)</label>
+      <div class="incident-grid" id="incident-types">
+        <label><input type="radio" name="incidents" value="Theft/Robbery"> 🔪 Theft/Robbery</label>
+        <label><input type="radio" name="incidents" value="Harassment"> 😠 Harassment</label>
+        <label><input type="radio" name="incidents" value="Tourist Scam"> 🗣️ Tourist Scam</label>
+        <label><input type="radio" name="incidents" value="Unsafe Area"> ⚠️ Unsafe Area</label>
+        <label><input type="radio" name="incidents" value="Poor Lighting"> 💡 Poor Lighting</label>
+        <label><input type="radio" name="incidents" value="Other"> ... Other</label>
+        <input type="hidden" name="group_id" value="{{ group_id }}">
+      </div>
+    </div>
+    <div class="form-group">
+      <label for="feedback-text">Your Feedback</label>
+      <textarea id="feedback-text" name="feedback_text" class="feedback-textarea" placeholder="Share your experience to help other tourists stay safe..."></textarea>
+    </div>
+    <button class="submit-btn" type="submit">Submit Feedback</button>
+  </div>
+</form>
+
+        </div>
+    </div>
+
+    <button class="sos-btn" id="sosBtn" onclick="triggerSOS()">🚨</button>
+    
+    
+
+
+    <div class="bottom-nav">
+        <div id="btn-home" class="active" onclick="showSection('home', this)">🏠<br>Home</div>
+    <div id="btn-map" onclick="showSection('map-section', this)">🗺️<br>Map</div>
+    <div id="btn-group" onclick="showSection('group', this)">👥<br>Group</div>
+    <div id="btn-emergency" onclick="showSection('emergency', this)">📞<br>Emergency</div>
+    <div id="btn-feedback" onclick="showSection('feedback', this)">💬<br>Feedback</div>
+    </div>
+<!-- Popup Modal HTML -->
+<div id="addMemberModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.45); z-index:9999; justify-content:center; align-items:center;">
+    <div style="background:#fff; border-radius:18px; padding:36px 32px 25px 32px; width:400px; box-sizing:border-box; text-align:center; position:relative; box-shadow:0 8px 32px rgba(32,48,85,0.10);">
+      <span id="closeAddMember" style="position:absolute; top:16px; right:22px; cursor:pointer; font-size:24px; font-weight:bold; color:#1a4aa8;">&times;</span>
+      <h2 style="color:#1a4aa8; margin-bottom:26px; font-size:24px; letter-spacing:1px;">Add Member</h2>
+      <form method="POST" action="/add_member">
+        <div class="form-group" style="margin-bottom:19px; text-align:left;">
+          <label for="name" style="margin-bottom:8px; color:#222; font-weight:600;">Full Name</label>
+          <input type="text" id="name" name="name" placeholder="Member's full name" required style="width:100%; padding:12px; border:1.5px solid #e3e8ee; border-radius:8px; font-size:15px; background:#f8f9fc;">
+        </div>
+        <div class="form-group" style="margin-bottom:19px; text-align:left;">
+          <label for="email" style="margin-bottom:8px; color:#222; font-weight:600;">Email address</label>
+          <input type="email" id="email" name="email" placeholder="user@example.com" required style="width:100%; padding:12px; border:1.5px solid #e3e8ee; border-radius:8px; font-size:15px; background:#f8f9fc;">
+        </div>
+        <div class="form-group" style="margin-bottom:19px; text-align:left;">
+          <label for="password" style="margin-bottom:8px; color:#222; font-weight:600;">Password</label>
+          <input type="password" id="password" name="password" placeholder="Create a password" required style="width:100%; padding:12px; border:1.5px solid #e3e8ee; border-radius:8px; font-size:15px; background:#f8f9fc;">
+        </div>
+        <div class="form-group" style="margin-bottom:19px; text-align:left;">
+          <label for="latitude" style="margin-bottom:8px; color:#222; font-weight:600;">Latitude</label>
+          <input type="number" step="any" id="latitude" name="latitude" placeholder="e.g. 23.2561" required style="width:100%; padding:12px; border:1.5px solid #e3e8ee; border-radius:8px; font-size:15px; background:#f8f9fc;">
+        </div>
+        <div class="form-group" style="margin-bottom:19px; text-align:left;">
+          <label for="longitude" style="margin-bottom:8px; color:#222; font-weight:600;">Longitude</label>
+          <input type="number" step="any" id="longitude" name="longitude" placeholder="e.g. 77.4859" required style="width:100%; padding:12px; border:1.5px solid #e3e8ee; border-radius:8px; font-size:15px; background:#f8f9fc;">
+        </div>
+        <div class="form-group" style="margin-bottom:28px; text-align:left;">
+          <label for="role" style="margin-bottom:8px; color:#222; font-weight:600;">Role</label>
+          <select id="role" name="role" required style="width:100%; padding:12px; border:1.5px solid #e3e8ee; border-radius:8px; font-size:15px; background:#f8f9fc;">
+            <option value="member" selected>Member</option>
+          </select>
+        </div>
+        <button type="submit" style="width:100%; padding:14px; background:#1a4aa8; color:#fff; border:none; border-radius:8px; font-size:16px; font-weight:bold; cursor:pointer; transition:background 0.2s;">Add Member</button>
+      </form>
+      <div class="message">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <p class="{{ 'success' if category == 'success' else '' }}">{{ message }}</p>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+      </div>
+    </div>
+    
+  </div>
+  <div id="recordingModal">
+    <div class="modal-tag-wrapper">
+      <div class="modal-left">
+        <div class="circle"></div>
+        <div class="modal-title">SOS<br>ACTIVATED</div>
+      </div>
+      <div class="modal-right">
+        <div class="modal-desc">Emergency alert<br>will be sent</div>
+        <ul class="modal-status-list">
+          <li><span class="modal-status-icon mic">🎤</span> Recording Audio</li>
+          <li><span class="modal-status-icon pin">📍</span> Sharing Location</li>
+          <li><span class="modal-status-icon phone">📞</span> Contacting Authorities</li>
+        </ul>
+        <button id="submitRecordingBtn">Submit</button>
+      </div>
+    </div>
+  </div>
+  
+    <script>
+
+      const openBtn = document.getElementById('openAddMemberBtn');
+        const modal = document.getElementById('addMemberModal');
+        const closeBtn = document.getElementById('closeAddMember');
+
+        openBtn.onclick = () => {
+            modal.style.display = 'flex'; // show modal with flexbox centering
+        };
+
+        closeBtn.onclick = () => {
+            modal.style.display = 'none';
+        };
+
+        window.onclick = (e) => {
+            if (e.target === modal) {
+            modal.style.display = 'none';
+            }
+        }; 
+
+      function initMaps() {
+        initMap();       // Your existing main map init function
+        initGroupMap();  // Your group map init function
+      }
+
+
+        let recording = false;
+        let mediaRecorder;
+        let chunks = [];
+
+        function triggerSOS() {
+        if (!recording) {
+        startRecording();
+        } else {
+        stopRecording();
+        }
+        }
+
+        function startRecording() {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert("Audio recording not supported in this browser.");
+        return;
+        }
+
+        navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(function(stream) {
+            mediaRecorder = new MediaRecorder(stream);
+            mediaRecorder.start();
+            chunks = [];
+
+            // Show recording modal
+            document.getElementById("recordingModal").style.display = "flex";
+           
+
+            mediaRecorder.ondataavailable = function(e) {
+            chunks.push(e.data);
+            };
+
+            recording = true;
+        })
+        .catch(function(err) {
+            alert("Permission denied or error accessing microphone: " + err);
+        });
+        }
+
+        function stopRecording() {
+        if (mediaRecorder && recording) {
+        mediaRecorder.stop();
+        recording = false;
+        document.getElementById("sosBtn").textContent = "🚨";
+        }
+        }
+
+        document.getElementById("submitRecordingBtn").addEventListener("click", function() {
+        // Here you can send the audio blob to server
+        const blob = new Blob(chunks, { 'type' : 'audio/ogg; codecs=opus' });
+
+        // Hide modal
+        document.getElementById("recordingModal").style.display = "none";
+
+        alert("Voice and Current location has sent to emergency services.");
+
+        // Stop media tracks to release mic
+        mediaRecorder.stream.getTracks().forEach(track => track.stop());
+        });
+
+        document.getElementById("cancelRecordingBtn").addEventListener("click", function() {
+        // Cancel recording, hide modal, discard chunks
+        if (mediaRecorder && recording) {
+        mediaRecorder.stop();
+        mediaRecorder.stream.getTracks().forEach(track => track.stop());
+        }
+        chunks = [];
+        recording = false;
+        document.getElementById("recordingModal").style.display = "none";
+        document.getElementById("sosBtn").textContent = "🚨";
+        });
+
+        
+
+        function initGroupMap() {
+  // Your logged-in user location as center
+  const userLocation = { lat: {{ lat }}, lng: {{ lon }} };
+
+  const map = new google.maps.Map(document.getElementById("group-map"), {
+    zoom: 14,
+    center: userLocation
+  });
+
+  // Blue marker for logged-in user
+  new google.maps.Marker({
+    position: userLocation,
+    map: map,
+    label: "You",
+    icon: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png"
+  });
+
+  // Add markers for all group users
+  const groupUsers = {{ group_users | tojson }};
+  groupUsers.forEach(user => {
+    // Skip logged in user if you want
+    if (user.lat && user.lon) {
+      new google.maps.Marker({
+        position: { lat: user.lat, lng: user.lon },
+        map: map,
+        title: user.name || "Group Member"
+      });
+    }
+  });
+}
+
+
+
+
+        // Generic message display for clicks (can be replaced with more complex logic)
+        function showMessage(msg) { console.log(msg); /* alert(msg); */ }
+
+        // Function to switch between sections
+        function showSection(sectionId, btn) {
+            document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active-section'));
+            document.getElementById(sectionId).classList.add('active-section');
+            document.querySelectorAll('.bottom-nav div').forEach(nav => nav.classList.remove('active'));
+            btn.classList.add('active');
+        }
+
+        
+
+        // Incident Type Selection Logic
+        function setupIncidentSelection(containerId) {
+            const incidentButtons = document.getElementById(containerId).querySelectorAll('.incident-btn');
+            incidentButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    this.classList.toggle('selected');
+                    const selectedIncidents = Array.from(document.querySelectorAll('#incident-types .incident-btn.selected'))
+                                                    .map(b => b.dataset.incident);
+                    console.log('Selected Incidents:', selectedIncidents);
+                });
+            });
+        }
+
+        // Photo Upload Logic
+        function setupPhotoUpload() {
+            const uploadContainer = document.querySelector('.photo-upload-container');
+            const fileInput = document.getElementById('photo-upload');
+
+            uploadContainer.addEventListener('click', () => {
+                fileInput.click();
+            });
+
+            uploadContainer.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadContainer.style.borderColor = '#007bff';
+                uploadContainer.style.backgroundColor = '#f8f9fa';
+            });
+
+            uploadContainer.addEventListener('dragleave', () => {
+                uploadContainer.style.borderColor = '#ccc';
+                uploadContainer.style.backgroundColor = '#fff';
+            });
+
+            uploadContainer.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadContainer.style.borderColor = '#ccc';
+                uploadContainer.style.backgroundColor = '#fff';
+                const files = e.dataTransfer.files;
+                handleFiles(files);
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                const files = e.target.files;
+                handleFiles(files);
+            });
+
+            function handleFiles(files) {
+                // Here you would handle the file upload, e.g., send to server
+                console.log('Files to upload:', files);
+                if (files.length > 0) {
+                    alert(`Selected ${files.length} file(s) for upload.`);
+                }
+            }
+        }
+
+        // Placeholder for submitting feedback
+        function submitFeedback() {
+            const location = document.getElementById('location').value;
+            const overallRating = document.getElementById('overall-rating').querySelectorAll('.star.filled').length;
+            const safetyRating = document.getElementById('safety-rating').querySelectorAll('.star.filled').length;
+            const selectedIncidents = Array.from(document.querySelectorAll('#incident-types .incident-btn.selected'))
+                                            .map(b => b.dataset.incident);
+            const feedbackText = document.getElementById('feedback-text').value;
+
+            if (!location) {
+                alert("Please enter a location.");
+                return;
+            }
+            if (overallRating === 0 || safetyRating === 0) {
+                alert("Please provide both overall and safety ratings.");
+                return;
+            }
+
+            console.log({
+                location,
+                overallRating,
+                safetyRating,
+                selectedIncidents,
+                feedbackText,
+                // Files would be handled by the upload logic separately
+            });
+
+            alert("Thank you for your feedback! (Check console for submitted data)");
+            // Here you would typically send this data to a server
+            
+            // Reset the form
+            document.getElementById('location').value = '';
+            document.getElementById('overall-rating').querySelectorAll('.star').forEach(s => s.classList.remove('filled'));
+            document.getElementById('safety-rating').querySelectorAll('.star').forEach(s => s.classList.remove('filled'));
+            document.getElementById('incident-types').querySelectorAll('.incident-btn').forEach(btn => btn.classList.remove('selected'));
+            document.getElementById('feedback-text').value = '';
+        }
+        
+        // Initialize interactive elements
+        document.addEventListener('DOMContentLoaded', () => {
+            setupStarRating('overall-rating');
+            setupStarRating('safety-rating');
+            setupIncidentSelection('incident-types');
+            setupPhotoUpload();
+        });
+
+        
+
+        function filterMarkers(category, btn) {
+            document.querySelectorAll(".map-tabs button").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            markers.forEach(marker => {
+                if (marker.category === category || (category === "zones" && marker.label === "You")) {
+                    marker.setMap(map);
+                } else {
+                    marker.setMap(null);
+                }
+            });
+        }
+        function handleUpdateLocationFormSubmit(event) {
+    event.preventDefault(); // prevent default form submission
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(function(position) {
+        // Update hidden fields with current position
+        document.getElementById("latInput").value = position.coords.latitude;
+        document.getElementById("lonInput").value = position.coords.longitude;
+
+        // Now submit the form with updated lat/lon
+        event.target.submit();
+      }, function(err) {
+        alert("Unable to get location: " + err.message);
+      });
+    } else {
+      alert("Geolocation is not supported by your browser.");
+    }
+  }
+
+  function offsetLatLng(lat, lng, offsetXmeters, offsetYmeters) {
+  const earthRadius = 6378137; // meters
+  const dLat = offsetYmeters / earthRadius;
+  const dLng = offsetXmeters / (earthRadius * Math.cos(Math.PI * lat / 180));
+
+  const newLat = lat + dLat * 180 / Math.PI;
+  const newLng = lng + dLng * 180 / Math.PI;
+
+  return { lat: newLat, lng: newLng };
+}
+
+function initMap() {
+  const userLocation = { lat: {{ lat }}, lng: {{ lon }} };
+  const map = new google.maps.Map(document.getElementById("map"), {
+    zoom: 14,
+    center: userLocation
+  });
+
+  // Blue marker for user location
+  new google.maps.Marker({
+    position: userLocation,
+    map: map,
+    label: "You",
+    icon: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png"
+  });
+
+  // Red circle 500m west (left)
+  const redCircleCenter = offsetLatLng(userLocation.lat, userLocation.lng, -500, 0);
+  new google.maps.Circle({
+    map: map,
+    center: redCircleCenter,
+    radius: 300,
+    fillColor: "#FF0000",
+    fillOpacity: 0.4,
+    strokeColor: "#FF0000",
+    strokeOpacity: 0.8,
+    strokeWeight: 2
+  });
+
+  // Orange circle 500m east (right)
+  const orangeCircleCenter = offsetLatLng(userLocation.lat, userLocation.lng, 900, 500);
+  new google.maps.Circle({
+    map: map,
+    center: orangeCircleCenter,
+    radius: 300,
+    fillColor: "#FFA500",
+    fillOpacity: 0.4,
+    strokeColor: "#FFA500",
+    strokeOpacity: 0.8,
+    strokeWeight: 2
+  });
+}
+document.getElementById('submitRecordingBtn').addEventListener('click', function() {
+    alert('Location and voice sent to authorities.');
+    // Hide the modal after submitting
+    document.getElementById('recordingModal').style.display = 'none';
+  });
+
+  document.addEventListener("DOMContentLoaded", function() {
+  document.getElementById("recordingModal").style.display = "none";
+});
+
+  // Usage: add event listener where needed
+  document.getElementById("updateLocationForm").addEventListener("submit", handleUpdateLocationFormSubmit);
+
+       
+        document.addEventListener("DOMContentLoaded", function () {
+      initGroupMap();
+    });
+
+    </script>
+   
+</body>
+</html>
